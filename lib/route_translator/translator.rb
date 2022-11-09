@@ -49,6 +49,14 @@ module RouteTranslator
       rescue I18n::MissingTranslationData => e
         raise e unless RouteTranslator.config.disable_fallback
       end
+
+      def allowed_to_deduplicate(locale, translated_path, generated_routes)
+        return false unless RouteTranslator.config.deduplicate_routes
+        return false if RouteTranslator.fallback_locales.include?(locale)
+        return false if I18n.default_locale == locale
+        
+        generated_routes[translated_path]
+      end
     end
 
     module_function
@@ -65,16 +73,22 @@ module RouteTranslator
     def translations_for(route)
       RouteTranslator::Translator::RouteHelpers.add route.name, route.route_set.named_routes
 
+      generated_routes = {}
+
       available_locales.each do |locale|
         translated_path = translate_path(route.path, locale, route.scope)
         next unless translated_path
+        next if allowed_to_deduplicate(locale, translated_path, generated_routes)
 
         translated_name                = translate_name(route.name, locale, route.route_set.named_routes.names)
         translated_options_constraints = translate_options_constraints(route.options_constraints, locale)
         translated_options             = translate_options(route.options, locale)
+        generated_routes[translated_path] = true
 
         yield locale, translated_name, translated_path, translated_options_constraints, translated_options
       end
+
+      generated_routes = nil
     end
 
     def route_name_for(args, old_name, suffix, kaller)
@@ -85,11 +99,25 @@ module RouteTranslator
                  args_locale.to_s.underscore
                elsif kaller.respond_to?("#{old_name}_#{current_locale_name}_#{suffix}")
                  current_locale_name
+               elsif fallback_locale = fallback_route_locale_name(current_locale_name, old_name, suffix, kaller)
+                 fallback_locale
                else
                  I18n.default_locale.to_s.underscore
                end
 
       "#{old_name}_#{locale}_#{suffix}"
+    end
+
+    def fallback_route_locale_name(current_locale_name, old_name, suffix, kaller)
+      return nil unless RouteTranslator.config.deduplicate_routes
+      
+      available_fallback_locales = I18n.fallbacks[current_locale_name].select do |fallback_locale|
+        kaller.respond_to?("#{old_name}_#{fallback_locale}_#{suffix}")
+      end
+
+      return nil if available_fallback_locales.empty?
+
+      available_fallback_locales.first
     end
   end
 end
