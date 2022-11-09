@@ -63,6 +63,8 @@ module RouteTranslator
 
     def available_locales
       locales = RouteTranslator.available_locales
+      return locales if RouteTranslator.config.deduplicate_routes
+
       # Make sure the default locale is translated in last place to avoid
       # problems with wildcards when default locale is omitted in paths. The
       # default routes will catch all paths like wildcard if it is translated first.
