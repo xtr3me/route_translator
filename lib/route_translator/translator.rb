@@ -50,12 +50,14 @@ module RouteTranslator
         raise e unless RouteTranslator.config.disable_fallback
       end
 
-      def allowed_to_deduplicate(locale, translated_path, generated_routes, bla: true)
+      def allowed_to_deduplicate(locale, translated_path, generated_routes)
         return false unless RouteTranslator.config.deduplicate_routes
-        return false if RouteTranslator.fallback_locales.include?(locale) && bla
+        return false if RouteTranslator.fallback_locales.include?(locale)
         return false if I18n.default_locale == locale
+        return false unless generated_routes[translated_path]
+        return true if generated_routes[translated_path].include?(I18n.default_locale)
         
-        generated_routes[translated_path]
+        !generated_routes[translated_path].include?(locale)
       end
     end
 
@@ -101,9 +103,12 @@ module RouteTranslator
       sorted_available_locales_for_deduplication.each do |locale|
         translated_path = translate_path(route.path, locale, route.scope)
         next unless translated_path
-        next if allowed_to_deduplicate(locale, translated_path, generated_routes, bla: false)
+        puts "DETECT: #{locale} -> #{translated_path} -> #{allowed_to_deduplicate(locale, translated_path, generated_routes)}" if translated_path.include?('over-scholierenwerk')
 
-        generated_routes[translated_path] = true
+        next if allowed_to_deduplicate(locale, translated_path, generated_routes)
+
+        generated_routes[translated_path] ||= []
+        generated_routes[translated_path] << locale
       end
 
       sorted_available_locales_for_routing_pass = (available_locales - RouteTranslator.fallback_locales) + (RouteTranslator.fallback_locales - [I18n.default_locale]) + [I18n.default_locale]
@@ -113,6 +118,7 @@ module RouteTranslator
         next unless translated_path
 
         # puts "#{allowed_to_deduplicate(locale, translated_path, generated_routes)} #{locale} -> #{translated_path}"
+        puts "ADD: #{locale} -> #{translated_path} -> #{allowed_to_deduplicate(locale, translated_path, generated_routes)}" if translated_path.include?('over-scholierenwerk')
         next if allowed_to_deduplicate(locale, translated_path, generated_routes)
 
         translated_name                = translate_name(route.name, locale, route.route_set.named_routes.names)
