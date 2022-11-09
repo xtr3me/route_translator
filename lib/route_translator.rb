@@ -74,7 +74,7 @@ module RouteTranslator
     locales = config.fallback_locales
 
     if locales.empty?
-      @fallback_locales ||= I18n.fallbacks.reduce([]) { |acc, entry| acc.push(entry.last.reject { |fallback| fallback == entry.first })  }.flatten.uniq
+      I18n.fallbacks.values.map(&:last).uniq
     else
       locales.map(&:to_sym)
     end

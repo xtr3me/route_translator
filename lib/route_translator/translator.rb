@@ -50,9 +50,9 @@ module RouteTranslator
         raise e unless RouteTranslator.config.disable_fallback
       end
 
-      def allowed_to_deduplicate(locale, translated_path, generated_routes)
+      def allowed_to_deduplicate(locale, translated_path, generated_routes, bla: true)
         return false unless RouteTranslator.config.deduplicate_routes
-        return false if RouteTranslator.fallback_locales.include?(locale)
+        return false if RouteTranslator.fallback_locales.include?(locale) && bla
         return false if I18n.default_locale == locale
         
         generated_routes[translated_path]
@@ -63,7 +63,6 @@ module RouteTranslator
 
     def available_locales
       locales = RouteTranslator.available_locales
-      return locales if RouteTranslator.config.deduplicate_routes
 
       # Make sure the default locale is translated in last place to avoid
       # problems with wildcards when default locale is omitted in paths. The
@@ -86,6 +85,39 @@ module RouteTranslator
         translated_options_constraints = translate_options_constraints(route.options_constraints, locale)
         translated_options             = translate_options(route.options, locale)
         generated_routes[translated_path] = true
+
+        yield locale, translated_name, translated_path, translated_options_constraints, translated_options
+      end
+
+      generated_routes = nil
+    end
+
+    def deduplicated_translations_for(route)
+      RouteTranslator::Translator::RouteHelpers.add route.name, route.route_set.named_routes
+
+      generated_routes = {}
+      sorted_available_locales_for_deduplication = [I18n.default_locale] + (RouteTranslator.fallback_locales - [I18n.default_locale]) + (available_locales - RouteTranslator.fallback_locales)
+
+      sorted_available_locales_for_deduplication.each do |locale|
+        translated_path = translate_path(route.path, locale, route.scope)
+        next unless translated_path
+        next if allowed_to_deduplicate(locale, translated_path, generated_routes, bla: false)
+
+        generated_routes[translated_path] = true
+      end
+
+      sorted_available_locales_for_routing_pass = (available_locales - RouteTranslator.fallback_locales) + (RouteTranslator.fallback_locales - [I18n.default_locale]) + [I18n.default_locale]
+
+      sorted_available_locales_for_routing_pass.each do |locale|
+        translated_path = translate_path(route.path, locale, route.scope)
+        next unless translated_path
+
+        # puts "#{allowed_to_deduplicate(locale, translated_path, generated_routes)} #{locale} -> #{translated_path}"
+        next if allowed_to_deduplicate(locale, translated_path, generated_routes)
+
+        translated_name                = translate_name(route.name, locale, route.route_set.named_routes.names)
+        translated_options_constraints = translate_options_constraints(route.options_constraints, locale)
+        translated_options             = translate_options(route.options, locale)
 
         yield locale, translated_name, translated_path, translated_options_constraints, translated_options
       end

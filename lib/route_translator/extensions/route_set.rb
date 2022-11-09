@@ -8,7 +8,7 @@ module ActionDispatch
       def add_localized_route(mapping, name, anchor, scope, path, controller, default_action, to, via, formatted, options_constraints, options)
         route = RouteTranslator::Route.new(self, path, name, options_constraints, options, mapping)
 
-        RouteTranslator::Translator.translations_for(route) do |locale, translated_name, translated_path, translated_options_constraints, translated_options|
+        RouteTranslator::Translator.deduplicated_translations_for(route) do |locale, translated_name, translated_path, translated_options_constraints, translated_options|
           translated_path_ast = ::ActionDispatch::Journey::Parser.parse(translated_path)
           translated_mapping  = translate_mapping(locale, self, translated_options, translated_path_ast, scope, controller, default_action, to, formatted, via, translated_options_constraints, anchor)
 
