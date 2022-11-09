@@ -90,7 +90,7 @@ module RouteTranslator
                  args_locale.to_s.underscore
                elsif kaller.respond_to?("#{old_name}_#{current_locale_name}_#{suffix}")
                  current_locale_name
-               elsif I18n.fallbacks[current_locale_name].select { |fallback_locale| kaller.respond_to?("#{old_name}_#{fallback_locale}_#{suffix}") }.length.positive?
+               elsif RouteTranslator.config.deduplicate_routes && I18n.fallbacks[current_locale_name].select { |fallback_locale| kaller.respond_to?("#{old_name}_#{fallback_locale}_#{suffix}") }.length.positive?
                  I18n.fallbacks[current_locale_name].select { |fallback_locale| kaller.respond_to?("#{old_name}_#{fallback_locale}_#{suffix}") }.first                    
                else
                  I18n.default_locale.to_s.underscore
