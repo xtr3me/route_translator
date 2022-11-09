@@ -74,10 +74,12 @@ module RouteTranslator
         translated_name                = translate_name(route.name, locale, route.route_set.named_routes.names)
         translated_options_constraints = translate_options_constraints(route.options_constraints, locale)
         translated_options             = translate_options(route.options, locale)
-        routes_generated[translated_path] = locale
+        routes_generated[translated_path] = true
 
         yield locale, translated_name, translated_path, translated_options_constraints, translated_options
       end
+
+      routes_generated = nil
     end
 
     def route_name_for(args, old_name, suffix, kaller)
