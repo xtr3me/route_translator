@@ -17,6 +17,7 @@ module RouteTranslator
     force_locale:                        false,
     generate_unlocalized_routes:         false,
     generate_unnamed_unlocalized_routes: false,
+    deduplicate_routes:                  false,
     hide_locale:                         false,
     host_locales:                        {},
     locale_param_key:                    :locale,

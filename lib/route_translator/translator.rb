@@ -69,7 +69,7 @@ module RouteTranslator
       available_locales.each do |locale|
         translated_path = translate_path(route.path, locale, route.scope)
         next unless translated_path
-        next if routes_generated[translated_path] && locale != I18n.default_locale
+        next if RouteTranslator.config.deduplicate_routes && routes_generated[translated_path] && locale != I18n.default_locale
 
         translated_name                = translate_name(route.name, locale, route.route_set.named_routes.names)
         translated_options_constraints = translate_options_constraints(route.options_constraints, locale)
