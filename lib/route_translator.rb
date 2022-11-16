@@ -13,10 +13,12 @@ module RouteTranslator
 
   DEFAULT_CONFIGURATION = {
     available_locales:                   [],
+    fallback_locales:                    [],
     disable_fallback:                    false,
     force_locale:                        false,
     generate_unlocalized_routes:         false,
     generate_unnamed_unlocalized_routes: false,
+    deduplicate_routes:                  false,
     hide_locale:                         false,
     host_locales:                        {},
     locale_param_key:                    :locale,
@@ -63,6 +65,16 @@ module RouteTranslator
 
     if locales.empty?
       I18n.available_locales.dup
+    else
+      locales.map(&:to_sym)
+    end
+  end
+
+  def fallback_locales
+    locales = config.fallback_locales
+
+    if locales.empty?
+      I18n.fallbacks.values.map(&:last).uniq
     else
       locales.map(&:to_sym)
     end
